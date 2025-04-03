@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Facial Emotion Detection</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f4f4f4;
+            padding: 20px;
+        }
+        h1 {
+            color: #333;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+            display: inline-block;
+            margin-top: 20px;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        #video {
+            border-radius: 10px;
+            border: 2px solid #007BFF;
+            margin-top: 10px;
+        }
+        p {
+            font-size: 18px;
+            color: #555;
+        }
+    </style>
+</head>
+<body>
+    <h1>Facial Emotion Detection</h1>
+    <div class="container">
+        <h2>Upload an Image</h2>
+        <input type="file" id="imageUpload" accept="image/*">
+        <button onclick="uploadImage()">Detect Emotion</button>
+        <p id="uploadResult"></p>
+    </div>
+    
+    <div class="container">
+        <h2>Capture Image from Camera</h2>
+        <video id="video" width="640" height="480" autoplay></video>
+        <button onclick="startCountdown()">Capture in 5 Seconds</button>
+        <canvas id="canvas" style="display:none;"></canvas>
+        <p id="captureResult"></p>
+    </div>
+    
+    <script>
+        function uploadImage() {
+            let fileInput = document.getElementById('imageUpload');
+            let file = fileInput.files[0];
+            if (!file) {
+                alert("Please select an image");
+                return;
+            }
+            let formData = new FormData();
+            formData.append("file", file);
+            fetch("/upload", {
+                method: "POST",
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById("uploadResult").innerText = "Detected Emotion: " + data.emotion;
+            })
+            .catch(error => console.error("Error:", error));
+        }
+
+        // Camera Capture Functionality
+        let video = document.getElementById('video');
+        let canvas = document.getElementById('canvas');
+        let countdown = 5;
+        
+        navigator.mediaDevices.getUserMedia({ video: true })
+            .then(stream => { video.srcObject = stream; })
+            .catch(error => console.error("Error accessing camera:", error));
+        
+        function startCountdown() {
+            let timer = setInterval(() => {
+                if (countdown === 0) {
+                    clearInterval(timer);
+                    captureImage();
+                    countdown = 5; // Reset countdown
+                } else {
+                    document.getElementById("captureResult").innerText = "Capturing in " + countdown + " seconds...";
+                    countdown--;
+                }
+            }, 1000);
+        }
+        
+        function captureImage() {
+            let context = canvas.getContext('2d');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            canvas.toBlob(blob => {
+                let formData = new FormData();
+                formData.append("file", blob, "capture.png");
+                fetch("/upload", {
+                    method: "POST",
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById("captureResult").innerText = "Detected Emotion: " + data.emotion;
+                })
+                .catch(error => console.error("Error:", error));
+            }, 'image/png');
+        }
+    </script>
+</body>
+</html>
