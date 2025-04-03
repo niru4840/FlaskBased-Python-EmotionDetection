@@ -6,7 +6,8 @@ from werkzeug.utils import secure_filename
 import tensorflow as tf
 from tensorflow.keras.models import load_model
 from tensorflow.keras.preprocessing.image import img_to_array
-
+import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = 'uploads/'
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
